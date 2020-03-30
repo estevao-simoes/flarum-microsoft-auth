@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@flarum/auth-facebook",
+  "name": "@flarum/auth-microsoft",
   "dependencies": {
     "flarum-webpack-config": "0.1.0-beta.10",
     "webpack": "^4.41.2",
