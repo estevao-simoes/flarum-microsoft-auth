@@ -7,7 +7,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-use Flarum\Auth\Facebook\FacebookAuthController;
+use Flarum\Auth\Microsoft\MicrosoftAuthController;
 use Flarum\Extend;
 
 return [
