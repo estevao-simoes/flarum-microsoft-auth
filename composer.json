@@ -1,0 +1,30 @@
+{
+    "name": "estevao-simoes/flarum-microsoft-auth",
+    "description": "Allow users to log in with Microsoft Account.",
+    "type": "flarum-extension",
+    "keywords": ["authentication"],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/estevao-simoes/flarum-microsoft-auth/issues",
+        "source": "https://github.com/estevao-simoes/flarum-microsoft-auth"
+    },
+    "require": {
+        "flarum/core": "^0.1.0-beta.12",
+        "stevenmaguire/oauth2-microsoft": "^2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flarum\\Auth\\Microsoft\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Microsoft Login",
+            "icon": {
+                "name": "fab fa-microsoft",
+                "backgroundColor": "#3b5998",
+                "color": "#fff"
+            }
+        }
+    }
+}
