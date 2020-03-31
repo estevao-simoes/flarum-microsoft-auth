@@ -9,13 +9,14 @@ flarum-microsoft-auth:
 
     # These translations are used in the Microsoft Settings modal dialog.
     microsoft_settings:
+      title: Confirugações Microsoft
       client_id_label: App ID
       client_secret_label: App Secret
-      title: Microsoft Settings
+      tenant_id_label: Tenant ID (Opcional)
 
   # Translations in this namespace are used by the forum user interface.
   forum:
 
     # These translations are used in the Log In modal dialog.
     log_in:
-      with_microsoft_button: Log In with Microsoft
+      with_microsoft_button: Entrar com Microsoft

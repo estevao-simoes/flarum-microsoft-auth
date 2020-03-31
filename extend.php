@@ -17,7 +17,9 @@ return [
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__.'/js/dist/admin.js'),
-
+    
+    new Extend\Locales(__DIR__ . '/resources/locale'),
+    
     (new Extend\Routes('forum'))
         ->get('/auth/microsoft', 'auth.microsoft', MicrosoftAuthController::class),
 ];

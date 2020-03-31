@@ -2,7 +2,6 @@
 
 namespace Flarum\Auth\Microsoft;
 
-use Exception;
 use Flarum\Forum\Auth\Registration;
 use Flarum\Forum\Auth\ResponseFactory;
 use Flarum\Http\UrlGenerator;
@@ -11,7 +10,6 @@ use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface;
-use Stevenmaguire\OAuth2\Client\Provider\Microsoft;
 
 class MicrosoftAuthController implements RequestHandlerInterface
 {
@@ -41,58 +39,71 @@ class MicrosoftAuthController implements RequestHandlerInterface
         $this->settings = $settings;
         $this->url = $url;
     }
+    
+    public function handle(Request $request) :ResponseInterface
+    {        
 
-    /**
-     * @param Request $request
-     * @return ResponseInterface
-     * @throws \Stevenmaguire\OAuth2\Client\Provider\Exception
-     * @throws Exception
-     */
-    public function handle(Request $request): ResponseInterface
-    {
-        $redirectUri = $this->url->to('forum')->route('auth.microsoft');
-
-        $provider = new Microsoft([
-            // Required
-            'clientId'                  => $this->settings->get('flarum-auth-microsoft.app_id'),
-            'clientSecret'              => $this->settings->get('flarum-auth-microsoft.app_secret'),
-            'redirectUri'               => $redirectUri
+        $provider = new \League\OAuth2\Client\Provider\GenericProvider([
+            'clientId'                => $this->settings->get('flarum-microsoft-auth.client_id'),    // The client ID assigned to you by the provider
+            'clientSecret'            => $this->settings->get('flarum-microsoft-auth.client_secret'),   // The client password assigned to you by the provider
+            'redirectUri'             => $this->url->to('forum')->route('auth.microsoft'),
+            'urlAuthorize'            => 'https://login.microsoftonline.com/c2c7d69b-25e1-4dd3-bb7c-cec85a3e1913/oauth2/v2.0/authorize',
+            'urlAccessToken'          => 'https://login.microsoftonline.com/c2c7d69b-25e1-4dd3-bb7c-cec85a3e1913/oauth2/v2.0/token',
+            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me'
         ]);
 
-        $session = $request->getAttribute('session');
-        $queryParams = $request->getQueryParams();
+        // If we don't have an authorization code then get one
+        if (!isset($_GET['code'])) {
 
-        $code = array_get($queryParams, 'code');
+            // Fetch the authorization URL from the provider; this returns the
+            // urlAuthorize option and generates and applies any necessary parameters
+            // (e.g. state).
+            $authorizationUrl = $provider->getAuthorizationUrl() . '&scope=User.Read';
 
-        if (! $code) {
-            $authUrl = $provider->getAuthorizationUrl();
-            $session->put('oauth2state', $provider->getState());
+            // Get the state generated for you and store it to the session.
+            $_SESSION['oauth2state'] = $provider->getState();
 
-            return new RedirectResponse($authUrl.'&display=popup');
-        }
+            // Redirect the user to the authorization URL.
+            return new RedirectResponse($authorizationUrl);
 
-        $state = array_get($queryParams, 'state');
+            // Check given state against previously stored one to mitigate CSRF attack
+        } elseif (empty($_GET['state']) || (isset($_SESSION['oauth2state']) && $_GET['state'] !== $_SESSION['oauth2state'])) {
 
-        if (! $state || $state !== $session->get('oauth2state')) {
-            $session->remove('oauth2state');
-
-            throw new Exception('Invalid state');
-        }
-
-        $token = $provider->getAccessToken('authorization_code', compact('code'));
-
-        $user = $provider->getResourceOwner($token);
-
-        return $this->response->make(
-            'microsoft',
-            $user->getId(),
-            function (Registration $registration) use ($user) {
-                $registration
-                    ->provideTrustedEmail($user->getEmail())
-                    ->provideAvatar($user->getPictureUrl())
-                    ->suggestUsername($user->getName())
-                    ->setPayload($user->toArray());
+            if (isset($_SESSION['oauth2state'])) {
+                unset($_SESSION['oauth2state']);
             }
-        );
+
+            exit('Invalid state');
+        } else {
+
+            try {
+
+                // Try to get an access token using the authorization code grant.
+                $accessToken = $provider->getAccessToken('authorization_code', [
+                    'code' => $_GET['code']
+                ]);
+
+                // Using the access token, we may look up details about the
+                // resource owner.
+                $user = $provider->getResourceOwner($accessToken)->toArray();
+                
+                return $this->response->make(
+                    'microsoft',
+                    $user['id'],
+                    function (Registration $registration) use ($user) {
+                        $registration
+                            ->provideTrustedEmail($user['mail'])
+                            // ->provideAvatar($user[''])
+                            ->suggestUsername($user['displayName'])
+                            ->setPayload($user);
+                    }
+                );
+
+            } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+
+                // Failed to get the access token or user details.
+                exit($e->getMessage());
+            }
+        }
     }
 }

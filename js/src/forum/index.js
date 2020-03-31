@@ -3,7 +3,7 @@ import app from 'flarum/app';
 import LogInButtons from 'flarum/components/LogInButtons';
 import LogInButton from 'flarum/components/LogInButton';
 
-app.initializers.add('flarum-microsoft-auth', () => {
+app.initializers.add('estevao-simoes-microsoft-auth', () => {
   extend(LogInButtons.prototype, 'items', function(items) {
     items.add('microsoft',
       <LogInButton
